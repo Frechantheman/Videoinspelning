@@ -4,102 +4,84 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Videoinspelning</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #f0f0ff;
-      padding: 20px;
-    }
-    h1 {
-      font-size: 22px;
-      margin-bottom: 10px;
-    }
-    video {
-      width: 100%;
-      max-width: 400px;
-      border-radius: 12px;
-      margin-bottom: 15px;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      margin: 5px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    #startBtn {
-      background-color: #4CAF50;
-      color: white;
-    }
-    #stopBtn {
-      background-color: #f44336;
-      color: white;
-    }
-    a {
-      display: block;
-      margin-top: 15px;
-      font-weight: bold;
-    }
-  </style>
 </head>
-<body>
-  <h1>🎥 Tryck för att spela in</h1>
-  <video id="preview" autoplay muted playsinline></video>
-  <br/>
+<body style="font-family: sans-serif; text-align: center; padding: 20px;">
+
+  <h2>🎥 Tryck för att spela in</h2>
+
+  <video id="preview" autoplay muted playsinline style="display: none; width: 100%; max-width: 500px; margin-bottom: 10px;"></video>
+
+  <p id="timerDisplay" style="font-weight: bold;"></p>
+
   <button id="startBtn">Starta inspelning</button>
   <button id="stopBtn" disabled>Stoppa & spara</button>
-  <a id="downloadLink" style="display: none;">Ladda ner din video</a>
+  <br><br>
+  <a id="downloadLink" style="display: none;"></a>
 
   <script>
     let mediaRecorder;
     let recordedChunks = [];
+    let stream;
+    let timerInterval;
+    let seconds = 0;
 
     const preview = document.getElementById("preview");
     const startBtn = document.getElementById("startBtn");
     const stopBtn = document.getElementById("stopBtn");
     const downloadLink = document.getElementById("downloadLink");
+    const timerDisplay = document.getElementById("timerDisplay");
 
     async function setupCamera() {
-      const stream = await navigator.mediaDevices.getUserMedia({
-  video: { facingMode: { exact: "environment" } },
-  audio: true
-});
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { exact: "environment" } },
+        audio: true
+      });
       preview.srcObject = stream;
+    }
+
+    startBtn.onclick = async () => {
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      recordedChunks = [];
+      seconds = 0;
+      timerDisplay.textContent = "";
+
+      await setupCamera();
+
+      preview.style.display = "block"; // Visa när vi börjar spela in
 
       mediaRecorder = new MediaRecorder(stream);
-      mediaRecorder.ondataavailable = event => {
-        if (event.data.size > 0) {
-          recordedChunks.push(event.data);
-        }
+      mediaRecorder.ondataavailable = e => {
+        if (e.data.size > 0) recordedChunks.push(e.data);
       };
+
       mediaRecorder.onstop = () => {
+        clearInterval(timerInterval);
+        timerDisplay.textContent = "";
+        preview.style.display = "none";
+
         const blob = new Blob(recordedChunks, { type: "video/webm" });
         const url = URL.createObjectURL(blob);
         downloadLink.href = url;
         downloadLink.download = "inspelning.webm";
         downloadLink.style.display = "block";
-        downloadLink.textContent = "🎬 Ladda ner din video";
-        recordedChunks = [];
+        downloadLink.textContent = "⬇️ Ladda ner din video";
       };
-    }
 
-    startBtn.onclick = () => {
       mediaRecorder.start();
-      startBtn.disabled = true;
-      stopBtn.disabled = false;
+
+      timerInterval = setInterval(() => {
+        seconds++;
+        timerDisplay.textContent = `⏱️ ${seconds} sekunder`;
+      }, 1000);
     };
 
     stopBtn.onclick = () => {
-      mediaRecorder.stop();
-      startBtn.disabled = false;
       stopBtn.disabled = true;
+      startBtn.disabled = false;
+      mediaRecorder.stop();
+      stream.getTracks().forEach(track => track.stop()); // Stoppa kameran
     };
-
-    setupCamera().catch(error => {
-      alert("Tillgång till kamera nekad eller fel: " + error.message);
-    });
   </script>
 </body>
 </html>
