@@ -4,26 +4,51 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Videoinspelning</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background: #f4f4f9;
+      padding: 20px;
+    }
+    video {
+      width: 100%;
+      max-width: 480px;
+      border-radius: 12px;
+      display: none;
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 10px 18px;
+      font-size: 16px;
+      margin: 8px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #startBtn { background-color: #4CAF50; color: white; }
+    #stopBtn { background-color: #f44336; color: white; }
+    #switchCameraBtn { background-color: #2196F3; color: white; }
+    #downloadLink {
+      display: none;
+      font-weight: bold;
+      margin-top: 20px;
+      text-decoration: underline;
+    }
+  </style>
 </head>
-<body style="font-family: sans-serif; text-align: center; padding: 20px;">
+<body>
 
-  <h2>🎥 Välj kamera & spela in</h2>
+  <h2>🎥 Tryck f\u00f6r att spela in video</h2>
 
-  <label for="cameraSelect"><b>Välj kamera:</b></label>
-  <select id="cameraSelect">
-    <option value="environment">Bakre</option>
-    <option value="user">Främre (selfie)</option>
-  </select>
-  <br><br>
-
-  <video id="preview" autoplay muted playsinline style="display: none; width: 100%; max-width: 500px; margin-bottom: 10px;"></video>
-
+  <video id="preview" autoplay muted playsinline></video>
   <p id="timerDisplay" style="font-weight: bold;"></p>
 
+  <button id="switchCameraBtn">🔄 Byt kamera</button><br>
   <button id="startBtn">Starta inspelning</button>
   <button id="stopBtn" disabled>Stoppa & spara</button>
-  <br><br>
-  <a id="downloadLink" style="display: none;"></a>
+
+  <a id="downloadLink" download="inspelning.webm" target="_blank">⬇️ Tryck & h\u00e5ll f\u00f6r att spara din video</a>
 
   <script>
     let mediaRecorder;
@@ -31,15 +56,17 @@
     let stream;
     let timerInterval;
     let seconds = 0;
+    let currentCamera = "environment";
 
     const preview = document.getElementById("preview");
     const startBtn = document.getElementById("startBtn");
     const stopBtn = document.getElementById("stopBtn");
+    const switchBtn = document.getElementById("switchCameraBtn");
     const downloadLink = document.getElementById("downloadLink");
     const timerDisplay = document.getElementById("timerDisplay");
-    const cameraSelect = document.getElementById("cameraSelect");
 
-    async function setupCamera(facingMode) {
+    async function setupCamera(facingMode = currentCamera) {
+      if (stream) stream.getTracks().forEach(track => track.stop());
       stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { exact: facingMode } },
         audio: true
@@ -47,17 +74,20 @@
       preview.srcObject = stream;
     }
 
+    switchBtn.onclick = async () => {
+      currentCamera = currentCamera === "environment" ? "user" : "environment";
+      await setupCamera(currentCamera);
+    };
+
     startBtn.onclick = async () => {
       startBtn.disabled = true;
       stopBtn.disabled = false;
       downloadLink.style.display = "none";
-      recordedChunks = [];
-      seconds = 0;
       timerDisplay.textContent = "";
+      seconds = 0;
+      recordedChunks = [];
 
-      const selectedCamera = cameraSelect.value;
-      await setupCamera(selectedCamera);
-
+      await setupCamera(currentCamera);
       preview.style.display = "block";
 
       mediaRecorder = new MediaRecorder(stream);
@@ -67,19 +97,16 @@
 
       mediaRecorder.onstop = () => {
         clearInterval(timerInterval);
-        timerDisplay.textContent = "";
         preview.style.display = "none";
+        timerDisplay.textContent = "";
 
         const blob = new Blob(recordedChunks, { type: "video/webm" });
         const url = URL.createObjectURL(blob);
         downloadLink.href = url;
-        downloadLink.download = "inspelning.webm";
         downloadLink.style.display = "block";
-        downloadLink.textContent = "⬇️ Ladda ner din video";
       };
 
       mediaRecorder.start();
-
       timerInterval = setInterval(() => {
         seconds++;
         timerDisplay.textContent = `⏱️ ${seconds} sekunder`;
