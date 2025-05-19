@@ -62,7 +62,10 @@
     const downloadLink = document.getElementById("downloadLink");
 
     async function setupCamera() {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+  video: { facingMode: { exact: "environment" } },
+  audio: true
+});
       preview.srcObject = stream;
 
       mediaRecorder = new MediaRecorder(stream);
