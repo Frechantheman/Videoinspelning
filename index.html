@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Videoinspelning</title>
+</head>
+<body>
+  <h3>🎥 Tryck för att spela in</h3>
+
+  <video id="preview" autoplay playsinline muted></video><br>
+  <button id="start">Starta inspelning</button>
+  <button id="stop" disabled>Stoppa</button>
+  <a id="download" style="display:none;">Ladda ner video</a>
+
+  <script>
+    let mediaRecorder;
+    let recordedChunks = [];
+
+    const preview = document.getElementById('preview');
+    const startBtn = document.getElementById('start');
+    const stopBtn = document.getElementById('stop');
+    const downloadLink = document.getElementById('download');
+
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then(stream => {
+        preview.srcObject = stream;
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.ondataavailable = e => {
+          if (e.data.size > 0) recordedChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(recordedChunks, { type: 'video/webm' });
+          const url = URL.createObjectURL(blob);
+          downloadLink.href = url;
+          downloadLink.download = "inspelning.webm";
+          downloadLink.style.display = 'block';
+          downloadLink.textContent = 'Ladda ner din video 🎬';
+        };
+
+        startBtn.onclick = () => {
+          recordedChunks = [];
+          mediaRecorder.start();
+          startBtn.disabled = true;
+          stopBtn.disabled = false;
+        };
+
+        stopBtn.onclick = () => {
+          mediaRecorder.stop();
+          startBtn.disabled = false;
+          stopBtn.disabled = true;
+        };
+      })
+      .catch(error => alert("Kunde inte starta kamera: " + error));
+  </script>
+</body>
+</html>
