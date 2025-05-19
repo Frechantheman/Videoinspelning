@@ -7,7 +7,14 @@
 </head>
 <body style="font-family: sans-serif; text-align: center; padding: 20px;">
 
-  <h2>🎥 Tryck för att spela in</h2>
+  <h2>🎥 Välj kamera & spela in</h2>
+
+  <label for="cameraSelect"><b>Välj kamera:</b></label>
+  <select id="cameraSelect">
+    <option value="environment">Bakre</option>
+    <option value="user">Främre (selfie)</option>
+  </select>
+  <br><br>
 
   <video id="preview" autoplay muted playsinline style="display: none; width: 100%; max-width: 500px; margin-bottom: 10px;"></video>
 
@@ -30,10 +37,11 @@
     const stopBtn = document.getElementById("stopBtn");
     const downloadLink = document.getElementById("downloadLink");
     const timerDisplay = document.getElementById("timerDisplay");
+    const cameraSelect = document.getElementById("cameraSelect");
 
-    async function setupCamera() {
+    async function setupCamera(facingMode) {
       stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { exact: "environment" } },
+        video: { facingMode: { exact: facingMode } },
         audio: true
       });
       preview.srcObject = stream;
@@ -42,13 +50,15 @@
     startBtn.onclick = async () => {
       startBtn.disabled = true;
       stopBtn.disabled = false;
+      downloadLink.style.display = "none";
       recordedChunks = [];
       seconds = 0;
       timerDisplay.textContent = "";
 
-      await setupCamera();
+      const selectedCamera = cameraSelect.value;
+      await setupCamera(selectedCamera);
 
-      preview.style.display = "block"; // Visa när vi börjar spela in
+      preview.style.display = "block";
 
       mediaRecorder = new MediaRecorder(stream);
       mediaRecorder.ondataavailable = e => {
@@ -80,7 +90,7 @@
       stopBtn.disabled = true;
       startBtn.disabled = false;
       mediaRecorder.stop();
-      stream.getTracks().forEach(track => track.stop()); // Stoppa kameran
+      stream.getTracks().forEach(track => track.stop());
     };
   </script>
 </body>
