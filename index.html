@@ -3,123 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Videoinspelning</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      background: #f4f4f9;
-      padding: 20px;
-    }
-    video {
-      width: 100%;
-      max-width: 480px;
-      border-radius: 12px;
-      display: none;
-      margin-bottom: 10px;
-    }
-    button {
-      padding: 10px 18px;
-      font-size: 16px;
-      margin: 8px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    #startBtn { background-color: #4CAF50; color: white; }
-    #stopBtn { background-color: #f44336; color: white; }
-    #switchCameraBtn { background-color: #2196F3; color: white; }
-    #downloadLink {
-      display: none;
-      font-weight: bold;
-      margin-top: 20px;
-      text-decoration: underline;
-    }
-  </style>
+  <title>Snapchat-inspelning</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-
-  <h2>🎥 Tryck f\u00f6r att spela in video</h2>
-
-  <video id="preview" autoplay muted playsinline></video>
-  <p id="timerDisplay" style="font-weight: bold;"></p>
-
-  <button id="switchCameraBtn">🔄 Byt kamera</button><br>
-  <button id="startBtn">Starta inspelning</button>
-  <button id="stopBtn" disabled>Stoppa & spara</button>
-
-<a id="downloadLink" target="_blank">🎬 Tryck här för att öppna videon i ny flik</a>
-
-
-  <script>
-    let mediaRecorder;
-    let recordedChunks = [];
-    let stream;
-    let timerInterval;
-    let seconds = 0;
-    let currentCamera = "environment";
-
-    const preview = document.getElementById("preview");
-    const startBtn = document.getElementById("startBtn");
-    const stopBtn = document.getElementById("stopBtn");
-    const switchBtn = document.getElementById("switchCameraBtn");
-    const downloadLink = document.getElementById("downloadLink");
-    const timerDisplay = document.getElementById("timerDisplay");
-
-    async function setupCamera(facingMode = currentCamera) {
-      if (stream) stream.getTracks().forEach(track => track.stop());
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { exact: facingMode } },
-        audio: true
-      });
-      preview.srcObject = stream;
-    }
-
-    switchBtn.onclick = async () => {
-      currentCamera = currentCamera === "environment" ? "user" : "environment";
-      await setupCamera(currentCamera);
-    };
-
-    startBtn.onclick = async () => {
-      startBtn.disabled = true;
-      stopBtn.disabled = false;
-      downloadLink.style.display = "none";
-      timerDisplay.textContent = "";
-      seconds = 0;
-      recordedChunks = [];
-
-      await setupCamera(currentCamera);
-      preview.style.display = "block";
-
-      mediaRecorder = new MediaRecorder(stream);
-      mediaRecorder.ondataavailable = e => {
-        if (e.data.size > 0) recordedChunks.push(e.data);
-      };
-
-      mediaRecorder.onstop = () => {
-        clearInterval(timerInterval);
-        preview.style.display = "none";
-        timerDisplay.textContent = "";
-
-        const blob = new Blob(recordedChunks, { type: "video/webm" });
-        const url = URL.createObjectURL(blob);
-        downloadLink.href = url;
-        downloadLink.style.display = "block";
-      };
-
-      mediaRecorder.start();
-      timerInterval = setInterval(() => {
-        seconds++;
-        timerDisplay.textContent = `⏱️ ${seconds} sekunder`;
-      }, 1000);
-    };
-
-    stopBtn.onclick = () => {
-      stopBtn.disabled = true;
-      startBtn.disabled = false;
-      mediaRecorder.stop();
-      stream.getTracks().forEach(track => track.stop());
-    };
-  </script>
+  <div class="camera-container">
+    <video id="preview" autoplay playsinline></video>
+    <div class="controls">
+      <span id="timer">00:00</span>
+      <button id="switchCameraBtn">🔄</button>
+    </div>
+    <div class="bottom-controls">
+      <button id="recordBtn"></button>
+    </div>
+  </div>
+  <video id="playback" controls style="display: none;"></video>
+  <a id="downloadLink" style="display:none" download="inspelning.webm">⬇️ Ladda ner video</a>
+  <script src="script.js"></script>
 </body>
 </html>
